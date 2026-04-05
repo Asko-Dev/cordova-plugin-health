@@ -26,6 +26,7 @@ static NSString *const HKPluginKeySourceName = @"sourceName";
 static NSString *const HKPluginKeySourceBundleId = @"sourceBundleId";
 static NSString *const HKPluginKeyMetadata = @"metadata";
 static NSString *const HKPluginKeyUUID = @"UUID";
+static NSString *const HKPluginKeyId = @"id";
 
 #pragma mark Categories
 
@@ -254,9 +255,10 @@ static NSString *const HKPluginKeyUUID = @"UUID";
     NSString *sampleTypeString = inputDictionary[HKPluginKeySampleType];
 
     //Load optional metadata key
-    NSDictionary *metadata = inputDictionary[HKPluginKeyMetadata];
-    if (metadata == nil) {
-      metadata = @{};
+    NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:inputDictionary[HKPluginKeyMetadata] ?: @{}];
+    NSString *externalId = inputDictionary[HKPluginKeyId];
+    if (externalId != nil) {
+        metadata[HKMetadataKeyExternalUUID] = externalId;
     }
 
     if ([inputDictionary objectForKey:HKPluginKeyUnit]) {
@@ -310,9 +312,10 @@ static NSString *const HKPluginKeyUUID = @"UUID";
         [objects addObject:sample];
     }
 
-    NSDictionary *metadata = inputDictionary[HKPluginKeyMetadata];
-    if (metadata == nil) {
-        metadata = @{};
+    NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:inputDictionary[HKPluginKeyMetadata] ?: @{}];
+    NSString *externalId = inputDictionary[HKPluginKeyId];
+    if (externalId != nil) {
+        metadata[HKMetadataKeyExternalUUID] = externalId;
     }
     return [self getHKCorrelationWithStartDate:startDate
                                        endDate:endDate
@@ -1903,8 +1906,6 @@ static NSString *const HKPluginKeyUUID = @"UUID";
  */
 - (void)deleteSamples:(CDVInvokedUrlCommand *)command {
   NSDictionary *args = command.arguments[0];
-  NSDate *startDate = [NSDate dateWithTimeIntervalSince1970:[args[HKPluginKeyStartDate] longValue]];
-  NSDate *endDate = [NSDate dateWithTimeIntervalSince1970:[args[HKPluginKeyEndDate] longValue]];
   NSString *sampleTypeString = args[HKPluginKeySampleType];
 
   HKSampleType *type = [HealthKit getHKSampleType:sampleTypeString];
@@ -1913,7 +1914,15 @@ static NSString *const HKPluginKeyUUID = @"UUID";
     return;
   }
 
-  NSPredicate *predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionStrictStartDate];
+  NSPredicate *predicate;
+  NSString *externalId = args[HKPluginKeyId];
+  if (externalId != nil) {
+    predicate = [HKQuery predicateForObjectsWithMetadataKey:HKMetadataKeyExternalUUID allowedValues:@[externalId]];
+  } else {
+    NSDate *startDate = [NSDate dateWithTimeIntervalSince1970:[args[HKPluginKeyStartDate] longValue]];
+    NSDate *endDate = [NSDate dateWithTimeIntervalSince1970:[args[HKPluginKeyEndDate] longValue]];
+    predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionStrictStartDate];
+  }
 
   NSSet *requestTypes = [NSSet setWithObjects:type, nil];
   [[HealthKit sharedHealthStore] requestAuthorizationToShareTypes:nil readTypes:requestTypes completion:^(BOOL success, NSError *error) {
