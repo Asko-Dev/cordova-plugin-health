@@ -1924,22 +1924,17 @@ static NSString *const HKPluginKeyId = @"id";
     predicate = [HKQuery predicateForSamplesWithStartDate:startDate endDate:endDate options:HKQueryOptionStrictStartDate];
   }
 
-  NSSet *requestTypes = [NSSet setWithObjects:type, nil];
-  [[HealthKit sharedHealthStore] requestAuthorizationToShareTypes:nil readTypes:requestTypes completion:^(BOOL success, NSError *error) {
-    __block HealthKit *bSelf = self;
-    if (success) {
-      [[HealthKit sharedHealthStore] deleteObjectsOfType:type predicate:predicate withCompletion:^(BOOL success, NSUInteger deletedObjectCount, NSError * _Nullable deletionError) {
-        if (deletionError != nil) {
-          dispatch_sync(dispatch_get_main_queue(), ^{
-            [HealthKit triggerErrorCallbackWithMessage:deletionError.localizedDescription command:command delegate:bSelf.commandDelegate];
-          });
-        } else {
-          dispatch_sync(dispatch_get_main_queue(), ^{
-            CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)deletedObjectCount];
-            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-          });
-        }
-      }];
+  __block HealthKit *bSelf = self;
+  [[HealthKit sharedHealthStore] deleteObjectsOfType:type predicate:predicate withCompletion:^(BOOL success, NSUInteger deletedObjectCount, NSError * _Nullable deletionError) {
+    if (deletionError != nil) {
+      dispatch_sync(dispatch_get_main_queue(), ^{
+        [HealthKit triggerErrorCallbackWithMessage:deletionError.localizedDescription command:command delegate:bSelf.commandDelegate];
+      });
+    } else {
+      dispatch_sync(dispatch_get_main_queue(), ^{
+        CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)deletedObjectCount];
+        [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+      });
     }
   }];
 }
