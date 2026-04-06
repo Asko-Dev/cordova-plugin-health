@@ -315,8 +315,10 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
 
     NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:inputDictionary[HKPluginKeyMetadata] ?: @{}];
     NSString *externalId = inputDictionary[HKPluginKeyId];
+    NSLog(@"[HealthKit] loadHKCorrelationFromInputDictionary externalId: %@", externalId);
     if (externalId != nil) {
         metadata[PluginExternalIDMetadataKey] = externalId;
+        NSLog(@"[HealthKit] Injected PluginExternalID into correlation metadata: %@", externalId);
     }
     return [self getHKCorrelationWithStartDate:startDate
                                        endDate:endDate
