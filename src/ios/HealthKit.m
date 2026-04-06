@@ -315,10 +315,8 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
 
     NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:inputDictionary[HKPluginKeyMetadata] ?: @{}];
     NSString *externalId = inputDictionary[HKPluginKeyId];
-    NSLog(@"[HealthKit] loadHKCorrelationFromInputDictionary externalId: %@", externalId);
     if (externalId != nil) {
         metadata[PluginExternalIDMetadataKey] = externalId;
-        NSLog(@"[HealthKit] Injected PluginExternalID into correlation metadata: %@", externalId);
     }
     return [self getHKCorrelationWithStartDate:startDate
                                        endDate:endDate
@@ -1887,7 +1885,6 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
     [[HealthKit sharedHealthStore] saveObject:correlation withCompletion:^(BOOL success, NSError *saveError) {
         __block HealthKit *bSelf = self;
         if (success) {
-            NSLog(@"[HealthKit] saveCorrelation saved, metadata: %@", correlation.metadata);
             dispatch_sync(dispatch_get_main_queue(), ^{
                 CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
                 [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -1945,9 +1942,7 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
         });
         return;
       }
-      NSLog(@"[HealthKit] deleteSamples HKSampleQuery found %lu samples", (unsigned long)samples.count);
       if (samples.count == 0) {
-        NSLog(@"[HealthKit] deleteSamples predicate: %@", predicate);
         dispatch_sync(dispatch_get_main_queue(), ^{
           CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:0];
           [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -1962,9 +1957,7 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
           [objectsToDelete addObjectsFromArray:((HKCorrelation *)sample).objects.allObjects];
         }
       }
-      NSLog(@"[HealthKit] deleteSamples deleting %lu objects (correlations + constituents)", (unsigned long)objectsToDelete.count);
       [[HealthKit sharedHealthStore] deleteObjects:objectsToDelete withCompletion:^(BOOL success, NSError *deletionError) {
-        NSLog(@"[HealthKit] deleteObjects result - success: %d, error: %@", success, deletionError);
         dispatch_sync(dispatch_get_main_queue(), ^{
           if (deletionError != nil) {
             [HealthKit triggerErrorCallbackWithMessage:deletionError.localizedDescription command:command delegate:bSelf.commandDelegate];
