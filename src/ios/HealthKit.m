@@ -1930,31 +1930,33 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
   __block HealthKit *bSelf = self;
 
   if ([type isKindOfClass:[HKCorrelationType class]]) {
-    // deleteObjectsOfType:predicate: does not work for correlation types —
-    // must query first, then delete the returned objects.
-    HKCorrelationQuery *query = [[HKCorrelationQuery alloc] initWithType:(HKCorrelationType *)type
-                                                               predicate:predicate
-                                                      samplePredicates:nil
-                                                             completion:^(HKCorrelationQuery *query, NSArray *correlations, NSError *queryError) {
+    // deleteObjectsOfType:predicate: does not work for correlation types.
+    // HKCorrelationQuery does not support metadata predicates — use HKSampleQuery
+    // which supports metadata predicates and returns HKCorrelation objects (subclass of HKSample).
+    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type
+                                                           predicate:predicate
+                                                               limit:HKObjectQueryNoLimit
+                                                     sortDescriptors:nil
+                                                      resultsHandler:^(HKSampleQuery *q, NSArray *samples, NSError *queryError) {
       if (queryError != nil) {
         dispatch_sync(dispatch_get_main_queue(), ^{
           [HealthKit triggerErrorCallbackWithMessage:queryError.localizedDescription command:command delegate:bSelf.commandDelegate];
         });
         return;
       }
-      if (correlations.count == 0) {
+      if (samples.count == 0) {
         dispatch_sync(dispatch_get_main_queue(), ^{
           CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:0];
           [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         });
         return;
       }
-      [[HealthKit sharedHealthStore] deleteObjects:correlations withCompletion:^(BOOL success, NSError *deletionError) {
+      [[HealthKit sharedHealthStore] deleteObjects:samples withCompletion:^(BOOL success, NSError *deletionError) {
         dispatch_sync(dispatch_get_main_queue(), ^{
           if (deletionError != nil) {
             [HealthKit triggerErrorCallbackWithMessage:deletionError.localizedDescription command:command delegate:bSelf.commandDelegate];
           } else {
-            CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)correlations.count];
+            CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)samples.count];
             [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
           }
         });
