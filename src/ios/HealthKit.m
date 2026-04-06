@@ -27,6 +27,7 @@ static NSString *const HKPluginKeySourceBundleId = @"sourceBundleId";
 static NSString *const HKPluginKeyMetadata = @"metadata";
 static NSString *const HKPluginKeyUUID = @"UUID";
 static NSString *const HKPluginKeyId = @"id";
+static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
 
 #pragma mark Categories
 
@@ -258,7 +259,7 @@ static NSString *const HKPluginKeyId = @"id";
     NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:inputDictionary[HKPluginKeyMetadata] ?: @{}];
     NSString *externalId = inputDictionary[HKPluginKeyId];
     if (externalId != nil) {
-        metadata[HKMetadataKeyExternalUUID] = externalId;
+        metadata[PluginExternalIDMetadataKey] = externalId;
     }
 
     if ([inputDictionary objectForKey:HKPluginKeyUnit]) {
@@ -315,7 +316,7 @@ static NSString *const HKPluginKeyId = @"id";
     NSMutableDictionary *metadata = [NSMutableDictionary dictionaryWithDictionary:inputDictionary[HKPluginKeyMetadata] ?: @{}];
     NSString *externalId = inputDictionary[HKPluginKeyId];
     if (externalId != nil) {
-        metadata[HKMetadataKeyExternalUUID] = externalId;
+        metadata[PluginExternalIDMetadataKey] = externalId;
     }
     return [self getHKCorrelationWithStartDate:startDate
                                        endDate:endDate
@@ -1917,7 +1918,7 @@ static NSString *const HKPluginKeyId = @"id";
   NSPredicate *predicate;
   NSString *externalId = args[HKPluginKeyId];
   if (externalId != nil) {
-    predicate = [HKQuery predicateForObjectsWithMetadataKey:HKMetadataKeyExternalUUID allowedValues:@[externalId]];
+    predicate = [HKQuery predicateForObjectsWithMetadataKey:PluginExternalIDMetadataKey allowedValues:@[externalId]];
   } else {
     NSDate *startDate = [NSDate dateWithTimeIntervalSince1970:[args[HKPluginKeyStartDate] longValue]];
     NSDate *endDate = [NSDate dateWithTimeIntervalSince1970:[args[HKPluginKeyEndDate] longValue]];
