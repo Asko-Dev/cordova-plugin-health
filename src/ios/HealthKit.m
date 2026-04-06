@@ -1955,6 +1955,7 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
         return;
       }
       [[HealthKit sharedHealthStore] deleteObjects:samples withCompletion:^(BOOL success, NSError *deletionError) {
+        NSLog(@"[HealthKit] deleteObjects result - success: %d, error: %@", success, deletionError);
         dispatch_sync(dispatch_get_main_queue(), ^{
           if (deletionError != nil) {
             [HealthKit triggerErrorCallbackWithMessage:deletionError.localizedDescription command:command delegate:bSelf.commandDelegate];
