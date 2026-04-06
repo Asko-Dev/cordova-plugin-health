@@ -1887,6 +1887,7 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
     [[HealthKit sharedHealthStore] saveObject:correlation withCompletion:^(BOOL success, NSError *saveError) {
         __block HealthKit *bSelf = self;
         if (success) {
+            NSLog(@"[HealthKit] saveCorrelation saved, metadata: %@", correlation.metadata);
             dispatch_sync(dispatch_get_main_queue(), ^{
                 CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
                 [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -1944,7 +1945,9 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
         });
         return;
       }
+      NSLog(@"[HealthKit] deleteSamples HKSampleQuery found %lu samples", (unsigned long)samples.count);
       if (samples.count == 0) {
+        NSLog(@"[HealthKit] deleteSamples predicate: %@", predicate);
         dispatch_sync(dispatch_get_main_queue(), ^{
           CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:0];
           [bSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
