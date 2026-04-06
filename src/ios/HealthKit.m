@@ -1954,7 +1954,16 @@ static NSString *const PluginExternalIDMetadataKey = @"PluginExternalID";
         });
         return;
       }
-      [[HealthKit sharedHealthStore] deleteObjects:samples withCompletion:^(BOOL success, NSError *deletionError) {
+      // Collect correlations and all their constituent objects so nothing is left orphaned.
+      NSMutableArray *objectsToDelete = [NSMutableArray array];
+      for (HKSample *sample in samples) {
+        [objectsToDelete addObject:sample];
+        if ([sample isKindOfClass:[HKCorrelation class]]) {
+          [objectsToDelete addObjectsFromArray:((HKCorrelation *)sample).objects.allObjects];
+        }
+      }
+      NSLog(@"[HealthKit] deleteSamples deleting %lu objects (correlations + constituents)", (unsigned long)objectsToDelete.count);
+      [[HealthKit sharedHealthStore] deleteObjects:objectsToDelete withCompletion:^(BOOL success, NSError *deletionError) {
         NSLog(@"[HealthKit] deleteObjects result - success: %d, error: %@", success, deletionError);
         dispatch_sync(dispatch_get_main_queue(), ^{
           if (deletionError != nil) {
