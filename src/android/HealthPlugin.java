@@ -403,6 +403,19 @@ public class HealthPlugin extends CordovaPlugin {
         }
     }
 
+    static Metadata buildMetadata(String clientId) {
+        if (clientId == null || clientId.isEmpty()) return Metadata.EMPTY;
+        return new Metadata(
+                Metadata.EMPTY_ID,
+                new DataOrigin(""),
+                Instant.MIN,
+                clientId,
+                0L,
+                null,
+                Metadata.RECORDING_METHOD_UNKNOWN
+        );
+    }
+
     protected static void populateFromMeta(JSONObject obj, Metadata meta) throws JSONException {
         String id = meta.getId();
         if (id != null) {
@@ -1019,28 +1032,28 @@ public class HealthPlugin extends CordovaPlugin {
                 return;
             }
 
+            String externalId = args.getJSONObject(0).has("id") ? args.getJSONObject(0).getString("id") : null;
+            Metadata meta = buildMetadata(externalId);
+
             InsertRecordsResponse response;
             List<Record> data = new LinkedList<>();
 
             // DATA_TYPE here we need to add support for each different data type
-            // TODO: we could add meta data when storing, including entry method, client ID
-            // and device
-
             if (datatype.equalsIgnoreCase("steps")) {
-                StepsFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data);
+                StepsFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data, meta);
             } else if (datatype.equalsIgnoreCase("stairs")) {
-                StairsFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data);
+                StairsFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data, meta);
             } else if (datatype.equalsIgnoreCase("weight")) {
-                WeightFunctions.prepareStoreRecords(args.getJSONObject(0), st, data);
+                WeightFunctions.prepareStoreRecords(args.getJSONObject(0), st, data, meta);
             } else if (datatype.equalsIgnoreCase("height")) {
-                HeightFunctions.prepareStoreRecords(args.getJSONObject(0), st, data);
+                HeightFunctions.prepareStoreRecords(args.getJSONObject(0), st, data, meta);
             } else if (datatype.equalsIgnoreCase("fat_percentage")) {
                 double perc = args.getJSONObject(0).getDouble("value");
 
                 BodyFatRecord record = new BodyFatRecord(
                         Instant.ofEpochMilli(st), null,
                         new Percentage(perc),
-                        Metadata.EMPTY);
+                        meta);
                 data.add(record);
             } else if (datatype.equalsIgnoreCase("activity")) {
                 String activityStr = args.getJSONObject(0).getString("value");
@@ -1055,7 +1068,7 @@ public class HealthPlugin extends CordovaPlugin {
                         Instant.ofEpochMilli(et), null,
                         exerciseType,
                         title, notes,
-                        Metadata.EMPTY,
+                        meta,
                         segments, laps);
                 data.add(record);
             } else if (datatype.equalsIgnoreCase("calories")) {
@@ -1065,7 +1078,7 @@ public class HealthPlugin extends CordovaPlugin {
                         Instant.ofEpochMilli(st), null,
                         Instant.ofEpochMilli(et), null,
                         Energy.kilocalories(kcals),
-                        Metadata.EMPTY);
+                        meta);
                 data.add(record);
             } else if (datatype.equalsIgnoreCase("calories.active")) {
                 double kcals = args.getJSONObject(0).getDouble("value");
@@ -1074,7 +1087,7 @@ public class HealthPlugin extends CordovaPlugin {
                         Instant.ofEpochMilli(st), null,
                         Instant.ofEpochMilli(et), null,
                         Energy.kilocalories(kcals),
-                        Metadata.EMPTY);
+                        meta);
                 data.add(record);
             } else if (datatype.equalsIgnoreCase("calories.basal")) {
                 double kcals = args.getJSONObject(0).getDouble("value");
@@ -1086,14 +1099,14 @@ public class HealthPlugin extends CordovaPlugin {
                 BasalMetabolicRateRecord record = new BasalMetabolicRateRecord(
                         Instant.ofEpochMilli(st), null,
                         pow,
-                        Metadata.EMPTY);
+                        meta);
                 data.add(record);
             } else if (datatype.equalsIgnoreCase("blood_glucose")) {
                 JSONObject glucoseobj = args.getJSONObject(0).getJSONObject("value");
-                BloodGlucoseFunctions.prepareStoreRecords(glucoseobj, st, data);
+                BloodGlucoseFunctions.prepareStoreRecords(glucoseobj, st, data, meta);
             } else if (datatype.equalsIgnoreCase("blood_pressure")) {
                 JSONObject pressureobj = args.getJSONObject(0).getJSONObject("value");
-                BloodPressureFunctions.prepareStoreRecords(pressureobj, st, data);
+                BloodPressureFunctions.prepareStoreRecords(pressureobj, st, data, meta);
             } else if (datatype.equalsIgnoreCase("distance")) {
                 double meters = args.getJSONObject(0).getDouble("value");
                 Length len = Length.meters(meters);
@@ -1102,23 +1115,23 @@ public class HealthPlugin extends CordovaPlugin {
                         Instant.ofEpochMilli(st), null,
                         Instant.ofEpochMilli(et), null,
                         len,
-                        Metadata.EMPTY);
+                        meta);
 
                 data.add(record);
             } else if (datatype.equalsIgnoreCase("sleep")) {
-                SleepFunctions.prepareStoreRecords(args.getJSONObject(0), data);
+                SleepFunctions.prepareStoreRecords(args.getJSONObject(0), data, meta);
             } else if (datatype.equalsIgnoreCase("heart_rate")) {
-                HeartRateFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data);
+                HeartRateFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data, meta);
             } else if (datatype.equalsIgnoreCase("heart_rate.resting")) {
-                HeartRateFunctions.prepareRestingStoreRecords(args.getJSONObject(0), st, data);
+                HeartRateFunctions.prepareRestingStoreRecords(args.getJSONObject(0), st, data, meta);
             } else if (datatype.equalsIgnoreCase("heart_rate.variability")) {
-                HeartRateFunctions.prepareVariabilityStoreRecords(args.getJSONObject(0), st, data);
+                HeartRateFunctions.prepareVariabilityStoreRecords(args.getJSONObject(0), st, data, meta);
             } else if (datatype.equalsIgnoreCase("nutrition")) {
-                NutritionFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data);
+                NutritionFunctions.prepareStoreRecords(args.getJSONObject(0), st, et, data, meta);
             } else if (datatype.equalsIgnoreCase("nutrition.water")) {
-                HydrationFunctions.prepareStoreRecords(args.getJSONObject(0), data);
+                HydrationFunctions.prepareStoreRecords(args.getJSONObject(0), data, meta);
             } else if (datatype.toLowerCase().startsWith("nutrition.")) {
-                NutritionXFunctions.prepareStoreRecords(datatype, args.getJSONObject(0), st, et, data);
+                NutritionXFunctions.prepareStoreRecords(datatype, args.getJSONObject(0), st, et, data, meta);
             } else {
                 callbackContext.error("Datatype not supported " + datatype);
                 return;
@@ -1158,12 +1171,12 @@ public class HealthPlugin extends CordovaPlugin {
             if (args.getJSONObject(0).has("id")) {
                 String id = args.getJSONObject(0).getString("id");
 
-                List<String> recordids = new LinkedList<>();
-                recordids.add(id);
+                List<String> clientRecordIds = new LinkedList<>();
+                clientRecordIds.add(id);
                 BuildersKt.runBlocking(
                         EmptyCoroutineContext.INSTANCE,
-                        (s, c) -> healthConnectClient.deleteRecords(dt, recordids, new LinkedList<>(), c));
-                Log.d(TAG, "Data deleted by ID of type " + datatype);
+                        (s, c) -> healthConnectClient.deleteRecords(dt, new LinkedList<>(), clientRecordIds, c));
+                Log.d(TAG, "Data deleted by client record ID of type " + datatype);
 
                 callbackContext.success();
             } else {
