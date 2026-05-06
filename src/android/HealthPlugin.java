@@ -414,7 +414,7 @@ public class HealthPlugin extends CordovaPlugin {
         return new Metadata(
                 Metadata.EMPTY_ID,
                 new DataOrigin(""),
-                Instant.MIN,
+                Instant.EPOCH,
                 clientId,
                 0L,
                 null,
